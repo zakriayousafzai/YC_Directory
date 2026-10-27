@@ -104,7 +104,7 @@ describe("StartupForm", () => {
       status: "ERROR",
       fieldErrors: {
         title: ["Title is too short"],
-        link: ["Use an image from a supported host."],
+        link: ["Enter a valid HTTP(S) image URL."],
       },
     });
 
@@ -114,7 +114,7 @@ describe("StartupForm", () => {
 
     expect(await screen.findByText("Title is too short")).toBeTruthy();
     expect(
-      screen.getByText("Use an image from a supported host.")
+      screen.getByText("Enter a valid HTTP(S) image URL.")
     ).toBeTruthy();
     expect(toastMock).toHaveBeenCalledWith(
       expect.objectContaining({ variant: "destructive" })

@@ -1,25 +1,12 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
-// Keep this list in sync with `ALLOWED_IMAGE_HOSTS` in `lib/image-hosts.ts`.
-// The list is duplicated here because `next.config.ts` is loaded before the
-// TypeScript path aliases and app modules are available.
-const ALLOWED_IMAGE_HOSTS = [
-  "cdn.sanity.io",
-  "images.unsplash.com",
-  "plus.unsplash.com",
-  "images.pexels.com",
-  "avatars.githubusercontent.com",
-  "user-images.githubusercontent.com",
-  "raw.githubusercontent.com",
-  "github.com",
-  "res.cloudinary.com",
-  "i.imgur.com",
-  "imgur.com",
-  "media.licdn.com",
-  "pbs.twimg.com",
-  "lh3.googleusercontent.com",
-] as const;
+// Accept images from any HTTP(S) host. The optimizer still rejects non-image
+// responses and SVGs, blocks private/local addresses, and caps response size.
+const REMOTE_IMAGE_PATTERNS = [
+  { protocol: "http" as const, hostname: "**" },
+  { protocol: "https" as const, hostname: "**" },
+];
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -39,13 +26,12 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   images: {
     dangerouslyAllowSVG: false,
+    dangerouslyAllowLocalIP: false,
+    maximumResponseBody: 5 * 1024 * 1024,
     contentDispositionType: "attachment",
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
     minimumCacheTTL: 86400,
-    remotePatterns: ALLOWED_IMAGE_HOSTS.map((hostname) => ({
-      protocol: "https" as const,
-      hostname,
-    })),
+    remotePatterns: REMOTE_IMAGE_PATTERNS,
   },
   async headers() {
     return [

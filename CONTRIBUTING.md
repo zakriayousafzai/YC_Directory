@@ -61,8 +61,8 @@ affected server action, route, or component.
 
 - Server-side input validation belongs in `lib/validation.ts` and must also be
   enforced in the server action or route handler.
-- New image sources must be added to both `lib/image-hosts.ts` and the
-  `remotePatterns` list in `next.config.ts`.
+- Image URL rules live in `lib/image-url.ts` and `next.config.ts`; keep the two
+  in sync when changing accepted protocols.
 - Keep rate-limit keys scoped by action and identity or IP.
 - Sanity writes go through `sanity/lib/write-client.ts`; never import the write
   token into client code.

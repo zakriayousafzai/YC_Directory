@@ -30,20 +30,23 @@ Security-sensitive areas include:
 - User-supplied Markdown and image URLs.
 - The view-count route and its rate limiting.
 - Sentry configuration and source-map uploads.
-- Security headers and the image host allowlist.
+- Security headers and image URL handling.
 
 ## Existing controls
 
 - Pitch input is validated on the server with Zod before any Sanity write.
-- Image URLs must use HTTPS and an allowlisted host, return an `image/*`
-  content type, must not be SVG, and must be no larger than 5 MB.
+- Image URLs must use HTTP(S) and must not embed credentials. The form handler
+  does not fetch user-supplied URLs, avoiding SSRF at submit time. Next.js'
+  image optimizer rejects non-image responses and SVGs, blocks private and local
+  addresses, and caps responses at 5 MB.
 - Markdown is rendered with `markdown-it` with raw HTML disabled.
 - `createPitch`, the view route, and the Auth.js routes use in-memory
   fixed-window rate limits.
 - Sanity writes are performed only through the server-only write client.
 - Responses set CSP, `X-Frame-Options: DENY`, `X-Content-Type-Options:
   nosniff`, `Referrer-Policy`, and `Permissions-Policy`.
-- Next.js remote image patterns are restricted to the same allowlist.
+- Next.js remote image patterns accept any HTTP(S) host with local-IP blocking
+  enabled.
 
 Rate limiting is per server instance. Deployments that need a global limit
 should use a shared store such as Redis.

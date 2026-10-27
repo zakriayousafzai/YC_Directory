@@ -9,7 +9,7 @@ import markdownit from "markdown-it";
 import { Skeleton } from "@/components/ui/skeleton";
 import View from "@/components/View";
 import StartupCard, { StartupTypeCard } from "@/components/StartupCard";
-import { getSafeImageUrl } from "@/lib/image-hosts";
+import { getSafeImageUrl } from "@/lib/image-url";
 
 const md = markdownit();
 

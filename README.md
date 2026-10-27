@@ -54,9 +54,10 @@ startups, using the responsive stacked layout at a 1023px viewport.*
 - **Sign in with GitHub** through Auth.js v5. A Sanity `author` document is
   created on first sign-in and the Sanity `_id` is carried in the session.
 - **Create a pitch** with a Markdown editor, auto-generated slug, category, and
-  image URL. Inputs are validated on the server with Zod, images must come from
-  an allowlisted host and pass a reachability check, and submissions are rate
-  limited.
+  image URL. Inputs are validated on the server with Zod, image URLs can point
+  at any HTTP(S) host, and submissions are rate limited. The Next.js image
+  optimizer rejects non-image responses and SVGs, blocks private addresses, and
+  caps responses at 5 MB.
 - **Read pitch details** with Markdown rendering, author information, optional
   editor picks, and an atomic view counter.
 - **View author profiles** and their submitted startups, with pagination.
@@ -66,7 +67,7 @@ startups, using the responsive stacked layout at a 1023px viewport.*
 - **Security headers** including CSP, frame denial, content-type sniffing
   protection, referrer policy, and a permissions policy.
 - **Tests** for validation, utilities, Markdown safety, the pitch server action,
-  auth callbacks, the view route, rate limiting, pagination, image hosts, and
+  auth callbacks, the view route, rate limiting, pagination, image URLs, and
   the create form.
 
 There is no voting feature and no vote data model.
@@ -249,7 +250,7 @@ components/               Navbar, search, cards, form, pagination, view counter
 lib/
   action.ts               createPitch server action
   action-state.ts         Shared action state and field-error types
-  image-hosts.ts          Allowlisted image hosts
+  image-url.ts            HTTP(S) image URL validation
   pagination.ts           Page parsing and GROQ slice helpers
   queries.ts              GROQ queries
   rate-limit.ts           In-memory fixed-window limiter
@@ -285,9 +286,8 @@ npm run test:watch
 
 The suite covers:
 
-- `tests/validation.test.ts` — valid and invalid pitch payloads, the image host
-  allowlist, image `content-type` checks, SVG rejection, size limits, and network
-  failures.
+- `tests/validation.test.ts` — valid and invalid pitch payloads, arbitrary
+  HTTP(S) image hosts, and rejected protocols or credentials.
 - `tests/utils.test.ts` — `cn`, `formateDate`, and
   `parseServerActionResponse`.
 - `tests/markdown.test.ts` — default Markdown rendering, raw HTML escaping, and
@@ -301,7 +301,8 @@ The suite covers:
 - `tests/auth-route.test.ts` — Auth.js handler delegation and rate limiting.
 - `tests/rate-limit.test.ts` — window behavior and client IP parsing.
 - `tests/pagination.test.ts` — page parsing, ranges, and total pages.
-- `tests/image-hosts.test.ts` — allowed, blocked, and malformed image URLs.
+- `tests/image-url.test.ts` — accepted hosts and protocols, credentials, and
+  malformed image URLs.
 - `tests/startup-form.test.tsx` — success redirect, field errors, and generic
   server errors.
 

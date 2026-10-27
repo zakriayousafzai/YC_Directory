@@ -184,7 +184,7 @@ history or your own backup process for content changes.
 | Startup detail shows no editor picks | No `editor-picks` playlist or playlist is empty | Optional; create the playlist to populate the section |
 | GitHub sign-in returns `redirect_uri` mismatch | Callback URL does not match the deployment host | Update the OAuth app callback or test on the production domain |
 | Sanity requests fail from the browser | Origin missing from Sanity CORS | Add the exact origin and allow credentials if needed |
-| Images fail to load | Host is not on the allowlist or returns non-image content | Use one of the supported hosts listed in `lib/image-hosts.ts`; the form validates reachability |
+| Images fail to load | Host is unreachable, returns non-image content, or resolves to a private address | Use a public HTTP(S) image URL; the optimizer rejects non-images, SVGs, local addresses, and responses over 5 MB |
 | Build takes a long time | Sentry source-map upload | Unset `SENTRY_AUTH_TOKEN` for builds that do not need upload |
 | Build fails with `JavaScript heap out of memory` | Node's default heap is too small | Set `NODE_OPTIONS=--max-old-space-size=4096` for the build |
 | Auth.js reports an untrusted host | Missing or incorrect `AUTH_SECRET` / host configuration | Set `AUTH_SECRET` and use the canonical deployment URL |
@@ -201,5 +201,5 @@ history or your own backup process for content changes.
 - Auth.js v5 is still pre-release; `next-auth` is pinned to
   `5.0.0-beta.32` and should be upgraded deliberately.
 - The test suite covers validation, the server action, auth callbacks, the view
-  route, rate limiting, pagination, image hosts, and the create form. GitHub
+  route, rate limiting, pagination, image URLs, and the create form. GitHub
   OAuth and real Sanity writes still need a manual smoke test.

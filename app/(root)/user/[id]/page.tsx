@@ -8,7 +8,7 @@ import {
 } from "@/lib/queries";
 import { getTotalPages, parsePage } from "@/lib/pagination";
 import { client } from "@/sanity/lib/client";
-import { getSafeImageUrl } from "@/lib/image-hosts";
+import { getSafeImageUrl } from "@/lib/image-url";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
