@@ -11,7 +11,7 @@ with the Next.js App Router, Sanity, Auth.js, and Tailwind CSS.
 [Contributing](CONTRIBUTING.md) ·
 [Security](SECURITY.md)
 
-![YC Directory home page](docs/screenshots/home-hero.png)
+![YC Directory home page while signed in](docs/screenshots/home-hero.png)
 
 > **Project status:** portfolio project. The latest pass added documentation,
 > tests, metadata, dependency patches, and CI without changing application
@@ -25,13 +25,28 @@ The existing deployment is available at
 <https://yc-directory-nine-lilac.vercel.app>.
 
 The screenshots in this README were captured from a local production build of
-this repository. They show the current UI, including the legacy "Vote on
-Pitches" copy; the application does not implement voting.
+this repository while signed in with GitHub. They show the current UI, including
+the legacy "Vote on Pitches" copy; the application does not implement voting.
 
 ![Startup detail page](docs/screenshots/startup-detail.png)
 
 *The detail page renders the pitch as Markdown, shows the author, and displays a
 view count.*
+
+### Signed-in views
+
+The header shows **Create**, **Logout**, and the GitHub avatar when a session is
+active. `/startup/create` redirects signed-out visitors to the home page.
+
+![Create startup form](docs/screenshots/create-startup.png)
+
+*The create form includes title, description, category, image URL, and a
+Markdown pitch editor.*
+
+![Author profile](docs/screenshots/user-profile.png)
+
+*The profile page shows the signed-in author's GitHub avatar, handle, bio, and
+startups, using the responsive stacked layout at a 1023px viewport.*
 
 ## Features
 
