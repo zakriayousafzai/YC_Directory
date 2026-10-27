@@ -4,7 +4,7 @@ Thanks for taking a look at YC Directory.
 
 ## Setup
 
-1. Install Node.js 24 (see `.nvmrc`).
+1. Install Node.js 22.12 or newer (Node.js 24 is tested; see `.nvmrc`).
 2. Run `npm ci`.
 3. Copy `.env.example` to `.env.local` and fill in the values.
 4. Follow the Sanity, GitHub OAuth, and playlist notes in the
@@ -25,14 +25,18 @@ variables.
 
 ## Checks before opening a pull request
 
+Run all of these:
+
 ```bash
+npm run lint
+npm run typecheck
 npm test
 npm run build
+npm audit --omit=dev --audit-level=high
 ```
 
-`npm run lint` and `npm run typecheck` are also available, but they currently
-fail on `main`. See [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md). Do not add
-new lint or TypeScript errors.
+CI runs the same commands and all steps are blocking. Do not add new lint,
+TypeScript, test, or audit failures.
 
 ## Pull requests
 
@@ -49,7 +53,16 @@ pull request.
 
 ## Scope
 
-Documentation, test, and tooling improvements are welcome. The known
-correctness and hardening fixes are tracked in
-[`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md); if you want to fix one, say so
-in the pull request so the behavior change is explicit.
+Documentation, test, tooling, and correctness improvements are welcome. If a
+pull request changes behavior, say so explicitly and add or update tests for the
+affected server action, route, or component.
+
+## Conventions
+
+- Server-side input validation belongs in `lib/validation.ts` and must also be
+  enforced in the server action or route handler.
+- New image sources must be added to both `lib/image-hosts.ts` and the
+  `remotePatterns` list in `next.config.ts`.
+- Keep rate-limit keys scoped by action and identity or IP.
+- Sanity writes go through `sanity/lib/write-client.ts`; never import the write
+  token into client code.

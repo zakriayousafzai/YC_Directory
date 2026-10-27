@@ -6,18 +6,15 @@ A full-stack directory for publishing and discovering startup pitches. Built
 with the Next.js App Router, Sanity, Auth.js, and Tailwind CSS.
 
 [Live demo](https://yc-directory-nine-lilac.vercel.app) ·
-[Known issues](docs/KNOWN_ISSUES.md) ·
 [Deployment guide](docs/DEPLOYMENT.md) ·
 [Contributing](CONTRIBUTING.md) ·
 [Security](SECURITY.md)
 
 ![YC Directory home page while signed in](docs/screenshots/home-hero.png)
 
-> **Project status:** portfolio project. The latest pass added documentation,
-> tests, metadata, dependency patches, and CI without changing application
-> source. The app is not
-> production-hardened; the remaining defects and dependency advisories are
-> documented rather than hidden. See [Known issues](docs/KNOWN_ISSUES.md).
+> **Project status:** portfolio project. The app uses the current stable Next.js,
+> React, Sanity, and Sentry releases. Lint, type checking, tests, the production
+> build, and the production dependency audit run as blocking CI checks.
 
 ## Demo
 
@@ -25,8 +22,7 @@ The existing deployment is available at
 <https://yc-directory-nine-lilac.vercel.app>.
 
 The screenshots in this README were captured from a local production build of
-this repository while signed in with GitHub. They show the current UI, including
-the legacy "Vote on Pitches" copy; the application does not implement voting.
+this repository while signed in with GitHub.
 
 ![Startup detail page](docs/screenshots/startup-detail.png)
 
@@ -50,45 +46,49 @@ startups, using the responsive stacked layout at a 1023px viewport.*
 
 ## Features
 
-- **Browse a startup directory** with cards for the latest pitches.
-- **Search** by title, category, or author name through a Sanity GROQ query.
-  The current query has a precedence bug; see
-  [Known issues](docs/KNOWN_ISSUES.md#3-search-query-precedence-bug).
+- **Browse a startup directory** with cards for the latest pitches and
+  offset pagination at nine startups per page.
+- **Search** by title, category, or author name through a Sanity GROQ query. The
+  slug and search conditions are grouped so every branch requires a published
+  slug.
 - **Sign in with GitHub** through Auth.js v5. A Sanity `author` document is
-  created on first sign-in.
+  created on first sign-in and the Sanity `_id` is carried in the session.
 - **Create a pitch** with a Markdown editor, auto-generated slug, category, and
-  image URL.
-- **Read pitch details** with Markdown rendering, author information, editor
-  picks, and a view counter.
-- **View author profiles** and their submitted startups.
+  image URL. Inputs are validated on the server with Zod, images must come from
+  an allowlisted host and pass a reachability check, and submissions are rate
+  limited.
+- **Read pitch details** with Markdown rendering, author information, optional
+  editor picks, and an atomic view counter.
+- **View author profiles** and their submitted startups, with pagination.
 - **Manage content** in the embedded Sanity Studio at `/studio`.
 - **Live content** through Sanity's Live Content API and `SanityLive`.
-- **Error monitoring** configured with Sentry.
-- **Unit tests** for validation, utilities, Markdown safety, and the pitch
-  server action.
+- **Error monitoring** configured with Sentry through environment variables.
+- **Security headers** including CSP, frame denial, content-type sniffing
+  protection, referrer policy, and a permissions policy.
+- **Tests** for validation, utilities, Markdown safety, the pitch server action,
+  auth callbacks, the view route, rate limiting, pagination, image hosts, and
+  the create form.
 
-There is **no voting feature** and no vote data model. The homepage copy is a
-known documentation/UI mismatch.
+There is no voting feature and no vote data model.
 
 ## Tech stack
 
 | Layer | Technology | Version in this repo |
 | --- | --- | --- |
-| Framework | [Next.js](https://nextjs.org/) App Router | `15.4.2-canary.29` |
-| UI runtime | [React](https://react.dev/) | `19.1.0` |
-| Language | [TypeScript](https://www.typescriptlang.org/) | `5.8.3` |
-| Styling | [Tailwind CSS](https://tailwindcss.com/) | `3.4.17` |
-| CMS | [Sanity](https://www.sanity.io/) | `4.1.1` |
-| CMS integration | [`next-sanity`](https://github.com/sanity-io/next-sanity) | `10.1.0-canary.3` |
-| Authentication | [Auth.js](https://authjs.dev/) (`next-auth`) | `5.0.0-beta.32` |
+| Framework | [Next.js](https://nextjs.org/) App Router | `16.4.3` |
+| UI runtime | [React](https://react.dev/) | `19.3.1` |
+| Language | [TypeScript](https://www.typescriptlang.org/) | `5.9.3` |
+| Styling | [Tailwind CSS](https://tailwindcss.com/) | `3.4.19` |
+| CMS | [Sanity](https://www.sanity.io/) | `6.20.0` |
+| CMS integration | [`next-sanity`](https://github.com/sanity-io/next-sanity) | `13.4.0` |
+| Authentication | [Auth.js](https://authjs.dev/) (`next-auth`) | `5.0.0-beta.32` (pinned) |
 | Markdown | [`markdown-it`](https://github.com/markdown-it/markdown-it) | `14.3.3` |
-| Error monitoring | [Sentry](https://sentry.io/) for Next.js | `10.76.2` |
-| Tests | [Vitest](https://vitest.dev/) | `5.0.5` |
-| Runtime | Node.js | 24 (`.nvmrc`; engines `>=20.9.0`) |
+| Error monitoring | [Sentry](https://sentry.io/) for Next.js | `11.9.0` |
+| Tests | [Vitest](https://vitest.dev/) + Testing Library | `5.0.5` |
+| Runtime | Node.js | 24 (`.nvmrc`; engines `>=22.12.0`) |
 
-The canary, beta, and experimental versions are intentional for this project,
-but they increase upgrade risk. See
-[Known issues](docs/KNOWN_ISSUES.md#20-experimental-framework-features).
+Auth.js v5 has no stable release yet, so `next-auth` is pinned to an exact beta
+version. Upgrade it deliberately and re-run the auth tests after any bump.
 
 ## Architecture
 
@@ -99,6 +99,7 @@ flowchart LR
   N -->|Auth.js GitHub provider| G[GitHub OAuth]
   N -->|Embedded Studio| S
   N -->|Server action writes| W[Sanity write client]
+  N -->|POST /api/views/[id]| W
   W --> S
   N -->|Errors and traces| E[Sentry]
   N -->|Hosted on| V[Vercel]
@@ -106,20 +107,27 @@ flowchart LR
 
 - **Reads:** Server Components use `sanityFetch` or the Sanity client.
 - **Writes:** `createPitch` runs as a server action with the server-only Sanity
-  write client.
+  write client. It validates input, enforces a per-author rate limit, awaits the
+  write, and returns the new document `_id`.
 - **Auth:** Auth.js uses the GitHub provider. The JWT/session carries the Sanity
   author `_id`.
-- **Views:** `components/View.tsx` reads a count and patches it inside
-  `after()`. The increment is not atomic; see
-  [Known issues](docs/KNOWN_ISSUES.md#9-view-counter-is-racy-and-can-become-nan).
-- **Observability:** Sentry is initialized through `instrumentation.ts` and the
-  `sentry.*.config.ts` files.
+- **Views:** `components/ViewCounter.tsx` calls `POST /api/views/[id]` once per
+  browser session. The route increments with
+  `setIfMissing({ views: 0 }).inc({ views: 1 })` so concurrent views do not
+  overwrite each other.
+- **Rate limiting:** `lib/rate-limit.ts` keeps fixed-window counters in memory
+  for the create action, view route, and Auth.js routes. This is per server
+  instance; use a shared store if you need a global limit.
+- **Observability:** Sentry is initialized through `instrumentation.ts`,
+  `instrumentation-client.ts`, `sentry.server.config.ts`, and
+  `sentry.edge.config.ts`. It is disabled when `NEXT_PUBLIC_SENTRY_DSN` is
+  unset.
 
 ## Quickstart
 
 ### Prerequisites
 
-- Node.js 24 (or any version allowed by `engines`: `>=20.9.0`).
+- Node.js 22.12 or newer (Node.js 24 is tested; see `.nvmrc`).
 - npm (the repository uses `package-lock.json`).
 - A Sanity project and dataset.
 - A GitHub OAuth app.
@@ -152,8 +160,8 @@ Never commit `.env` or `.env.local`.
 1. Make the dataset publicly readable. The app does not use a read token.
 2. Add CORS origins for `http://localhost:3000` and your deployed origin.
 3. Create an **Editor** token and set `SANITY_WRITE_TOKEN`.
-4. Create a playlist with slug `editor-picks`. Startup detail pages currently
-   fail if this document is missing.
+4. Optionally create a playlist with slug `editor-picks`. The detail page treats
+   a missing playlist as an empty list.
 5. Optionally add sample startups. The first GitHub sign-in creates the author.
 
 ### 4. Configure GitHub OAuth
@@ -173,8 +181,7 @@ Set `AUTH_GITHUB_ID` and `AUTH_GITHUB_SECRET`. Generate `AUTH_SECRET` with
 npm run dev
 ```
 
-`npm run dev` automatically runs `npm run typegen` first. Open
-<http://localhost:3000>. The Sanity Studio is at
+Open <http://localhost:3000>. The Sanity Studio is at
 <http://localhost:3000/studio>.
 
 For a production build locally:
@@ -182,6 +189,12 @@ For a production build locally:
 ```bash
 npm run build
 npm start
+```
+
+After changing the Sanity schema or GROQ queries, regenerate the committed types:
+
+```bash
+npm run typegen
 ```
 
 ## Environment variables
@@ -195,7 +208,13 @@ npm start
 | `AUTH_SECRET` | Yes | Server-only | Auth.js session encryption secret |
 | `AUTH_GITHUB_ID` | Yes | Server-side | GitHub OAuth client ID |
 | `AUTH_GITHUB_SECRET` | Yes | Server-only | GitHub OAuth client secret |
+| `AUTH_TRUST_HOST` | Non-Vercel hosts | Server-only | Trust the proxy's `Host` header; Vercel sets this automatically |
+| `NEXT_PUBLIC_SENTRY_DSN` | No | Public | Enables Sentry when set |
+| `NEXT_PUBLIC_SENTRY_TRACES_SAMPLE_RATE` | No | Public | Client trace sample rate; defaults to `0.1` |
+| `SENTRY_TRACES_SAMPLE_RATE` | No | Server-only | Server trace sample rate; defaults to `0.1` |
 | `SENTRY_AUTH_TOKEN` | No | Build-only | Uploads source maps during the build; omit locally |
+| `SENTRY_ORG` | No | Build-only | Sentry organization slug |
+| `SENTRY_PROJECT` | No | Build-only | Sentry project slug |
 
 The repository does **not** use `SANITY_API_READ_TOKEN` or
 `SANITY_API_WRITE_TOKEN`. Use the names above.
@@ -206,34 +225,17 @@ See [`.env.example`](.env.example) for safe placeholders and setup comments.
 
 | Command | Purpose |
 | --- | --- |
-| `npm run dev` | Start the development server (runs typegen first) |
-| `npm run build` | Production build (runs typegen first) |
+| `npm run dev` | Start the development server |
+| `npm run build` | Production build |
 | `npm start` | Serve the production build |
-| `npm run lint` | ESLint via `next lint` |
+| `npm run lint` | Run ESLint over the repository |
 | `npm test` | Run the Vitest suite once |
 | `npm run test:watch` | Run Vitest in watch mode |
 | `npm run typecheck` | Run `tsc --noEmit` |
 | `npm run typegen` | Extract the Sanity schema and generate TypeScript types |
-| `npm run predev` / `npm run prebuild` | Automatic typegen hooks |
 
-### Current check status
-
-Verified on 2026-10-27 with Node 24.13.0 and npm 11.21.1:
-
-| Command | Result |
-| --- | --- |
-| `npm test` | **Pass** — 4 files, 19 tests |
-| `npm run build` | **Pass** — type and lint checks are disabled in `next.config.ts` |
-| `npm run lint` | **Fail** — 4 errors, 3 warnings |
-| `npm run typecheck` | **Fail** — 12 errors in `auth.ts` |
-
-`npm run build` above was run with a real Sanity environment. CI cannot receive
-that access, so it runs `npm run build --ignore-scripts` with placeholder
-values. That variant was verified in a clean copy (381.7 seconds, 4 GB heap).
-
-This is why CI gates on tests and the build, while lint and typecheck are
-reported as informational. The full list is in
-[Known issues](docs/KNOWN_ISSUES.md).
+Typegen is explicit rather than a `predev`/`prebuild` hook, so local development
+and CI builds do not need an authenticated Sanity CLI session.
 
 ## Project structure
 
@@ -241,36 +243,38 @@ reported as informational. The full list is in
 app/
   (root)/                 Public directory, startup detail, create, user profile
   api/auth/[...nextauth]/ Auth.js route handler
-  api/sentry-example-api/ Diagnostic route (should be removed in production)
+  api/views/[id]/         Atomic view-count increment
   studio/[[...tool]]/     Embedded Sanity Studio
-  sentry-example-page/    Diagnostic page
-components/               Navbar, search, cards, form, UI primitives
+components/               Navbar, search, cards, form, pagination, view counter
 lib/
   action.ts               createPitch server action
+  action-state.ts         Shared action state and field-error types
+  image-hosts.ts          Allowlisted image hosts
+  pagination.ts           Page parsing and GROQ slice helpers
   queries.ts              GROQ queries
+  rate-limit.ts           In-memory fixed-window limiter
   utils.ts                cn, date formatting, response cloning
-  validation.ts           Zod form schema with image HEAD check
+  validation.ts           Zod form schema and image checks
 sanity/
   lib/                    Read client, write client, live content
   schemaTypes/            author, startup, playlist schemas
-tests/                    Vitest unit tests
-docs/                     Deployment guide, known issues, screenshots
+tests/                    Vitest unit and component tests
+docs/                     Deployment guide and screenshots
 auth.ts                   Auth.js configuration
-next.config.ts            Next.js, image, and Sentry configuration
+next.config.ts            Next.js, image, header, and Sentry configuration
 ```
 
 ## Routes
 
 | Route | Access | Purpose |
 | --- | --- | --- |
-| `/` | Public | Startup directory and search |
+| `/` | Public | Startup directory, search, and pagination |
 | `/startup/[id]` | Public | Startup detail and pitch |
 | `/startup/create` | Signed-in users | Submit a startup (redirects to `/` when signed out) |
-| `/user/[id]` | Public | Author profile and their startups |
+| `/user/[id]` | Public | Author profile and their startups, with pagination |
 | `/studio/[[...tool]]` | Public shell, Sanity-authenticated editing | Embedded Sanity Studio |
 | `/api/auth/[...nextauth]` | Public | Auth.js route handler |
-| `/sentry-example-page` | Public | Sentry diagnostic page |
-| `/api/sentry-example-api` | Public | Sentry diagnostic API that intentionally throws |
+| `/api/views/[id]` | Public, rate limited | Increment a startup's view count |
 
 ## Testing
 
@@ -281,39 +285,48 @@ npm run test:watch
 
 The suite covers:
 
-- `tests/validation.test.ts` — valid and invalid pitch payloads, image
-  `content-type` checks, missing headers, and network failures.
+- `tests/validation.test.ts` — valid and invalid pitch payloads, the image host
+  allowlist, image `content-type` checks, SVG rejection, size limits, and network
+  failures.
 - `tests/utils.test.ts` — `cn`, `formateDate`, and
   `parseServerActionResponse`.
 - `tests/markdown.test.ts` — default Markdown rendering, raw HTML escaping, and
   blocked `javascript:` links.
-- `tests/action.test.ts` — unauthenticated rejection and the authenticated write
-  payload with mocked `@/auth` and `@/sanity/lib/write-client`.
+- `tests/action.test.ts` — unauthenticated rejection, validation errors, the
+  authenticated write payload, rate limiting, and generic write failures.
+- `tests/auth.test.ts` — first sign-in author creation, duplicate avoidance,
+  missing GitHub ids, and JWT/session id mapping.
+- `tests/views-route.test.ts` — atomic increment, missing startups, invalid ids,
+  write failures, and rate limiting.
+- `tests/auth-route.test.ts` — Auth.js handler delegation and rate limiting.
+- `tests/rate-limit.test.ts` — window behavior and client IP parsing.
+- `tests/pagination.test.ts` — page parsing, ranges, and total pages.
+- `tests/image-hosts.test.ts` — allowed, blocked, and malformed image URLs.
+- `tests/startup-form.test.tsx` — success redirect, field errors, and generic
+  server errors.
 
-Not covered: GitHub OAuth end-to-end, real Sanity writes, the create-form
-redirect, startup detail/playlist behavior, the view counter, and browser E2E
-flows. See [Known issues](docs/KNOWN_ISSUES.md#18-test-coverage-is-intentionally-narrow).
+GitHub OAuth end-to-end and real Sanity writes are not automated; run those
+manually against a development project.
 
 ## CI
 
-`.github/workflows/ci.yml` is set up to:
+`.github/workflows/ci.yml` runs on pushes to `main`, pull requests, and manual
+dispatches:
 
 1. Install with `npm ci` on the Node version from `.nvmrc`.
-2. Run `npm test`.
-3. Run `npm run build --ignore-scripts` with a 4 GB Node heap. The
-   `--ignore-scripts` flag skips `prebuild` typegen, which needs a real Sanity
-   login/token; the generated `sanity/types.ts` is committed, so the app still
-   compiles.
-4. Report `npm run lint` and `npm run typecheck` as informational steps
-   (`continue-on-error: true`) because both currently fail on `main`.
+2. Run `npm run lint`.
+3. Run `npm run typecheck`.
+4. Run `npm test`.
+5. Run `npm run build`.
+6. Run `npm audit --omit=dev --audit-level=high`.
 
-The workflow uses placeholder environment values and no secrets. Its first run
-on `main` completed successfully on 2026-10-27 in 3 minutes 13 seconds
-([run 40509349568](https://github.com/zakriayousafzai/YC_Directory/actions/runs/40509349568)).
+All steps are blocking. The workflow uses placeholder environment values and no
+secrets; Sentry source-map upload is disabled because `SENTRY_AUTH_TOKEN` is
+empty.
 
 ## Deployment
 
-The project is configured for Vercel and a standard Node 24 host:
+The project is configured for Vercel and a standard Node host:
 
 ```bash
 npm ci
@@ -321,37 +334,15 @@ npm run build
 npm start
 ```
 
-A clean build needs about 4 GB of Node heap in this repository; CI sets
+A clean build may need a larger Node heap; CI sets
 `NODE_OPTIONS=--max-old-space-size=4096`.
 
-For the full Vercel checklist — Sanity CORS, the `editor-picks` playlist,
-GitHub OAuth callbacks, environment variables, health checks, Sentry, and
-rollback — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
+For the full Vercel checklist — Sanity CORS, the optional `editor-picks`
+playlist, GitHub OAuth callbacks, environment variables, health checks, Sentry,
+rate-limit notes, and rollback — see [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md).
 
 Docker and Docker Compose are intentionally out of scope. The repository does
 not include a `Dockerfile`.
-
-## Known limitations
-
-This is a portfolio project, not a production-hardened SaaS:
-
-- No voting despite the homepage copy; no vote model or action.
-- No server-side validation in the create action.
-- Search query precedence bug.
-- Startup detail crashes if the `editor-picks` playlist is missing.
-- The Sanity create call is not awaited, so the success response lacks `_id`.
-- View counting is non-atomic and can produce `NaN`.
-- Unknown startup and profile routes render the 404 UI with HTTP `200` (soft
-  404).
-- Wildcard image hosts, SVG enabled, and incomplete security headers.
-- No pagination, rate limiting, or browser E2E tests.
-- 62 npm advisories remain, including 2 critical transitive advisories in
-  Sanity/CLI tooling.
-- Lint and typecheck currently fail; the build ignores both.
-
-The complete, line-referenced list is in
-[docs/KNOWN_ISSUES.md](docs/KNOWN_ISSUES.md). Please read it before treating any
-part of the app as production-ready.
 
 ## Security
 
@@ -364,8 +355,8 @@ is ever committed, rotate it immediately.
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, branch conventions, checks,
-and pull-request expectations. Do not add new lint or TypeScript errors, and keep
-behavior changes explicit.
+and pull-request expectations. Keep behavior changes explicit and add tests for
+new server actions or routes.
 
 ## License
 
