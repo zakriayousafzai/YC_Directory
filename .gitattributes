@@ -1,0 +1,3 @@
+# Keep generated Sanity artifacts stable across Windows and POSIX checkouts.
+sanity/extract.json text eol=lf
+sanity/types.ts text eol=lf

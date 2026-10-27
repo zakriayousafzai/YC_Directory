@@ -1,12 +1,38 @@
 {
-  "name": "yc_directory",
+  "name": "yc-directory",
   "version": "0.1.0",
+  "description": "A Next.js and Sanity directory for publishing and discovering startup pitches.",
   "private": true,
+  "license": "MIT",
+  "author": "Zakria Khan",
+  "homepage": "https://yc-directory-nine-lilac.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zakriayousafzai/YC_Directory.git"
+  },
+  "bugs": {
+    "url": "https://github.com/zakriayousafzai/YC_Directory/issues"
+  },
+  "keywords": [
+    "nextjs",
+    "sanity",
+    "authjs",
+    "typescript",
+    "tailwindcss",
+    "startups",
+    "directory"
+  ],
+  "engines": {
+    "node": ">=20.9.0"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "predev": "npm run typegen",
     "prebuild": "npm run typegen",
     "typegen": "sanity schema extract --path=./sanity/extract.json && sanity typegen generate"
@@ -20,17 +46,17 @@
     "@radix-ui/react-avatar": "^1.1.10",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-toast": "^1.2.14",
-    "@sanity/image-url": "^1.1.0",
     "@sanity/vision": "^3.99.0",
-    "@sentry/nextjs": "^10.0.0",
-    "@tailwindcss/typography": "^0.5.10",
+    "@sentry/nextjs": "^10.76.2",
+    "@tailwindcss/typography": "^0.5.16",
     "@uiw/react-md-editor": "^4.0.8",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "easymde": "^2.21.0",
     "lucide-react": "^0.525.0",
-    "markdown-it": "^14.1.0",
+    "markdown-it": "^14.3.3",
     "next": "^15.4.2-canary.29",
-    "next-auth": "^5.0.0-beta.29",
+    "next-auth": "^5.0.0-beta.32",
     "next-sanity": "^10.1.0-canary.3",
     "react": "19.1.0",
     "react-dom": "19.1.0",
@@ -41,19 +67,20 @@
     "styled-components": "^6.1.19",
     "tailwind-merge": "^3.3.1",
     "tailwindcss-animate": "^1.0.7",
-    "typography": "^0.16.24"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@types/markdown-it": "^14.1.2",
-    "@types/node": "^20",
+    "@types/node": "^24.19.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.16",
     "eslint": "^9",
     "eslint-config-next": "15.4.2",
-    "postcss": "^8.4.31",
+    "postcss": "^8.5.31",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^5.0.5"
   }
 }
