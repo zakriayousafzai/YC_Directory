@@ -1,5 +1,7 @@
 # YC Directory
 
+[![CI](https://github.com/zakriayousafzai/YC_Directory/actions/workflows/ci.yml/badge.svg)](https://github.com/zakriayousafzai/YC_Directory/actions/workflows/ci.yml)
+
 A full-stack directory for publishing and discovering startup pitches. Built
 with the Next.js App Router, Sanity, Auth.js, and Tailwind CSS.
 
@@ -290,9 +292,9 @@ flows. See [Known issues](docs/KNOWN_ISSUES.md#18-test-coverage-is-intentionally
 4. Report `npm run lint` and `npm run typecheck` as informational steps
    (`continue-on-error: true`) because both currently fail on `main`.
 
-The workflow uses placeholder environment values and no secrets. It has not yet
-run on GitHub, so this README does not display a CI badge. Add the badge only
-after the first successful run.
+The workflow uses placeholder environment values and no secrets. Its first run
+on `main` completed successfully on 2026-10-27 in 3 minutes 13 seconds
+([run 40509349568](https://github.com/zakriayousafzai/YC_Directory/actions/runs/40509349568)).
 
 ## Deployment
 
