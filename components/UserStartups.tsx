@@ -1,15 +1,19 @@
 import { STARTUPS_BY_AUTHOR_QUERY } from "@/lib/queries";
+import { getPageRange } from "@/lib/pagination";
 import { client } from "@/sanity/lib/client";
-import React from "react";
 import StartupCard, { StartupTypeCard } from "./StartupCard";
 
-const UserStartups = async ({ id }: { id: string }) => {
-  const startups = await client.fetch(STARTUPS_BY_AUTHOR_QUERY, { id });
+const UserStartups = async ({ id, page }: { id: string; page: number }) => {
+  const { start, end } = getPageRange(page);
+  const startups = await client.fetch<StartupTypeCard[]>(
+    STARTUPS_BY_AUTHOR_QUERY,
+    { id, start, end }
+  );
 
   return (
     <>
-      {startups.length > 0 ? (
-        startups.map((startup: StartupTypeCard) => (
+      {startups && startups.length > 0 ? (
+        startups.map((startup) => (
           <StartupCard key={startup._id} post={startup} />
         ))
       ) : (

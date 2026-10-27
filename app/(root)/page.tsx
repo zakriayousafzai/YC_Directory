@@ -1,22 +1,45 @@
 import StartupCard, { StartupTypeCard } from "@/components/StartupCard";
 import SearchForm from "@/components/SearchForm";
-import { STARTUPS_QUERY } from "@/lib/queries";
+import Pagination from "@/components/Pagination";
+import {
+  STARTUPS_COUNT_QUERY,
+  STARTUPS_QUERY,
+} from "@/lib/queries";
+import { getPageRange, getTotalPages, parsePage } from "@/lib/pagination";
+import { client } from "@/sanity/lib/client";
 import { sanityFetch, SanityLive } from "@/sanity/lib/live";
-import { auth } from "@/auth";
+import { notFound } from "next/navigation";
 
 export default async function Home({
   searchParams,
 }: {
-  searchParams: Promise<{ query?: string }>;
+  searchParams: Promise<{
+    query?: string | string[];
+    page?: string | string[];
+  }>;
 }) {
-  const query = (await searchParams).query;
-  const params = { search: query || null };
+  const resolvedSearchParams = await searchParams;
+  const query = Array.isArray(resolvedSearchParams.query)
+    ? resolvedSearchParams.query[0]
+    : resolvedSearchParams.query;
+  const page = parsePage(resolvedSearchParams.page);
+  const { start, end } = getPageRange(page);
+  const params = { search: query || null, start, end };
 
-  const session = await auth();
+  const [{ data }, total] = await Promise.all([
+    sanityFetch({ query: STARTUPS_QUERY, params }),
+    client.fetch<number>(STARTUPS_COUNT_QUERY, {
+      search: query || null,
+    }),
+  ]);
 
-  console.log(session?.id);
+  const posts = Array.isArray(data) ? (data as StartupTypeCard[]) : [];
 
-  const { data: posts } = await sanityFetch({ query: STARTUPS_QUERY, params });
+  const totalPages = getTotalPages(total);
+
+  if (page > totalPages && total > 0) {
+    notFound();
+  }
 
   return (
     <>
@@ -27,7 +50,7 @@ export default async function Home({
         </h1>
 
         <p className="sub-heading !max-w-3xl">
-          Submit Ideas, Vote on Pitches, and Get Noticed in Virtual Competition.
+          Submit Ideas, Connect with Founders, and Get Noticed.
         </p>
 
         <SearchForm query={query} />
@@ -39,14 +62,16 @@ export default async function Home({
         </p>
 
         <ul className="mt-7 card_grid">
-          {posts?.length > 0 ? (
+          {posts.length > 0 ? (
             posts.map((post: StartupTypeCard) => (
-              <StartupCard key={post?._id} post={post} />
+              <StartupCard key={post._id} post={post} />
             ))
           ) : (
             <p className="no-results">No startup found</p>
           )}
         </ul>
+
+        <Pagination page={page} totalPages={totalPages} query={query} />
       </section>
 
       <SanityLive />

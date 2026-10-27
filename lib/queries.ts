@@ -1,29 +1,48 @@
 import { defineQuery } from "next-sanity";
 
-export const STARTUPS_QUERY =
-  defineQuery(`*[_type == "startup" && defined(slug.current) && !defined($search) || title match $search || category match $search || author->name match $search] | order(_createdAt desc) {
-  _id, 
-  title, 
+export const STARTUPS_QUERY = defineQuery(`*[
+  _type == "startup" &&
+  defined(slug.current) &&
+  (
+    !defined($search) ||
+    title match $search ||
+    category match $search ||
+    author->name match $search
+  )
+] | order(_createdAt desc) [$start...$end] {
+  _id,
+  title,
   slug,
   _createdAt,
   author -> {
     _id, name, image, bio
-  }, 
+  },
   views,
   description,
   category,
   image,
 }`);
 
+export const STARTUPS_COUNT_QUERY = defineQuery(`count(*[
+  _type == "startup" &&
+  defined(slug.current) &&
+  (
+    !defined($search) ||
+    title match $search ||
+    category match $search ||
+    author->name match $search
+  )
+])`);
+
 export const STARTUP_BY_ID_QUERY =
   defineQuery(`*[_type == "startup" && _id == $id][0]{
-  _id, 
-  title, 
+  _id,
+  title,
   slug,
   _createdAt,
   author -> {
     _id, name, username, image, bio
-  }, 
+  },
   views,
   description,
   category,
@@ -33,7 +52,8 @@ export const STARTUP_BY_ID_QUERY =
 
 export const STARTUP_VIEWS_QUERY = defineQuery(`
     *[_type == "startup" && _id == $id][0]{
-        _id, views
+        _id,
+        "views": coalesce(views, 0)
     }
 `);
 
@@ -62,19 +82,22 @@ export const AUTHOR_BY_ID_QUERY = defineQuery(`
 `);
 
 export const STARTUPS_BY_AUTHOR_QUERY =
-  defineQuery(`*[_type == "startup" && author._ref == $id] | order(_createdAt desc) {
-  _id, 
-  title, 
+  defineQuery(`*[_type == "startup" && author._ref == $id] | order(_createdAt desc) [$start...$end] {
+  _id,
+  title,
   slug,
   _createdAt,
   author -> {
     _id, name, image, bio
-  }, 
+  },
   views,
   description,
   category,
   image,
 }`);
+
+export const STARTUPS_BY_AUTHOR_COUNT_QUERY =
+  defineQuery(`count(*[_type == "startup" && author._ref == $id])`);
 
 export const PLAYLIST_BY_SLUG_QUERY =
   defineQuery(`*[_type == "playlist" && slug.current == $slug][0]{
